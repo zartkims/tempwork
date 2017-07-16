@@ -2,6 +2,7 @@ package com.example.caipengli.helloworld;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.annotation.TargetApi;
+import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
@@ -129,6 +130,13 @@ public class MainActivity extends AppCompatActivity {
         observeTheTalkBack();
         observerTouch();
         compateListener();
+        mTalkbackTv.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, SecActivity.class));
+                finish();
+            }
+        });
     }
 
     private void observerTouch() {
