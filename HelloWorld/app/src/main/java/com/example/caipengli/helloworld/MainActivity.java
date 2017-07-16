@@ -1,8 +1,11 @@
 package com.example.caipengli.helloworld;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.annotation.TargetApi;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.view.accessibility.AccessibilityManagerCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -22,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TALKBACK = "TalkBackPreferencesActivity";
 
     private static AccessibilityManager.AccessibilityStateChangeListener mListener;
+    private static TouchExplorationChangeListenerImple mTouchListener;
 
     private Handler mHandler = new Handler(){
         @Override
@@ -123,6 +127,16 @@ public class MainActivity extends AppCompatActivity {
         mTalkbackTv.setText(sb.toString());
 
         observeTheTalkBack();
+        observerTouch();
+        compateListener();
+    }
+
+    private void observerTouch() {
+        if (mTouchListener == null) {
+            mTouchListener = new TouchExplorationChangeListenerImple();
+            AccessibilityManager am = (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+            am.addTouchExplorationStateChangeListener(mTouchListener);
+        }
     }
 
     private void observeTheTalkBack() {
@@ -162,11 +176,26 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    private void compateListener() {
+        AccessibilityManager am = (AccessibilityManager) getSystemService(ACCESSIBILITY_SERVICE);
+
+        AccessibilityManagerCompat.addAccessibilityStateChangeListener(am, new AccesssService());
+    }
+
     private class AccessibilityStateChangeListenerImple implements AccessibilityManager.AccessibilityStateChangeListener {
         @Override
         public void onAccessibilityStateChanged(boolean enabled) {
             Log.i("cpl", "the AccessibilityManager change " + enabled);
 
+            mHandler.sendEmptyMessageDelayed(1, 300);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    private class TouchExplorationChangeListenerImple implements AccessibilityManager.TouchExplorationStateChangeListener {
+        @Override
+        public void onTouchExplorationStateChanged(boolean enabled) {
+            Log.i("cpl", "the TouchExplorationChangeListenerImple change " + enabled);
             mHandler.sendEmptyMessageDelayed(1, 300);
         }
     }
