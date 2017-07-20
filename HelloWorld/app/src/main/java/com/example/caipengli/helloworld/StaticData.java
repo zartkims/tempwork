@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Paint;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -57,7 +58,7 @@ public class StaticData {
         float textYPadding = itemYPaddingDp * density;
         float textBaseLine = fontHeight - paint.getFontMetrics().descent;
         int itemHeight = (int) (2 * textYPadding + fontHeight);
-        List<ContentItem> list = new LinkedList<ContentItem>();
+        List<ContentItem> list = new ArrayList<ContentItem>();
         int curX = firX;
         int curY = firY;
         totalWidth = (int) (totalWidth - lp - rp);

@@ -17,5 +17,4 @@ public class ContentItem {
     //
     public int textLeft;
     public int textBaseLine;
-
 }
