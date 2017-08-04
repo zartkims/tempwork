@@ -19,8 +19,8 @@ import java.util.List;
 
 public class ScrollerSelectView extends View {
     private static final int CONTENT_TEXT_SIZE_DP = 18;
-    private static float BOTTOM_AREA_HEIGHT = 50;
-    private static float TOP_AREA_HEIGHT = 50;
+    private final static float BOTTOM_SCROLL_AREA_HEIGHT = 50;
+    private final static float TOP_SCROLL_AREA_HEIGHT = 50;
 
     private Scroller mScroller;
     private Paint mPaint;
@@ -34,6 +34,8 @@ public class ScrollerSelectView extends View {
     private int mTopInScreen = -1;
     private int mBottomInScreen = -1;
     private int mContentTextSize = 54;
+    private float mTopScrollArea = 50;
+    private float mBottomScrollArea = 50;
 
     private Point mSelectStartPoint;
     private Point mSelectEndPoint;
@@ -59,8 +61,8 @@ public class ScrollerSelectView extends View {
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
         float density = getContext().getResources().getDisplayMetrics().density;
-        BOTTOM_AREA_HEIGHT = BOTTOM_AREA_HEIGHT * density;
-        TOP_AREA_HEIGHT = BOTTOM_AREA_HEIGHT;
+        mTopScrollArea = TOP_SCROLL_AREA_HEIGHT * density;
+        mBottomScrollArea = BOTTOM_SCROLL_AREA_HEIGHT * density;
         mScreenHeight = getContext().getResources().getDisplayMetrics().heightPixels;
         mScreenWidth = getContext().getResources().getDisplayMetrics().widthPixels;
         mViewHeight = (int) (400 * density);
@@ -72,6 +74,7 @@ public class ScrollerSelectView extends View {
                 mScreenWidth, 2, 2,
                 5, 3,
                 10, 10);
+        if (mItems.size() > 0) mContentHeight = mItems.get(mItems.size() - 1).bottom;
         preSelectStatus = new boolean[mItems.size()];
         resetPreStatus();
         int mostBottom = mItems.get(mItems.size() - 1).bottom;
@@ -113,7 +116,7 @@ public class ScrollerSelectView extends View {
                     boolean upToDown = true;
                     if (mFirstSelectItem.left < mSelectEndPoint.x && mSelectEndPoint.x < mFirstSelectItem.right
                             && mFirstSelectItem.top < mSelectEndPoint.y && mSelectEndPoint.y < mFirstSelectItem.bottom) {
-                        upToDown = true;
+                        resetAllPre();
                     } else {
                         if (mSelectEndPoint.y < mFirstSelectItem.top) {
                             upToDown = false;
@@ -135,10 +138,10 @@ public class ScrollerSelectView extends View {
                     }
                 }
 //                Log.i("cpl!", "getx  : " + event.getX() + "    getY : " + event.getY() + " getScrollY : " + getScrollY() + "   fis : " + mFirstSelectItem.isSelect);
-                if (getScrollY()  + mViewHeight < mContentHeight && event.getRawY() > mTopInScreen + mViewHeight - BOTTOM_AREA_HEIGHT) {
+                if (getScrollY()  + mViewHeight < mContentHeight && event.getRawY() > mTopInScreen + mViewHeight - mBottomScrollArea) {
                     mScroller.startScroll((int)getX(), mOffsetY, 0, mScrollDy);
                     mOffsetY += mScrollDy;
-                } else if (getScrollY() > mScrollDy && event.getRawY() < mTopInScreen + TOP_AREA_HEIGHT) {
+                } else if (getScrollY() > mScrollDy && event.getRawY() < mTopInScreen + mTopScrollArea) {
                     mScroller.startScroll((int)getX(), mOffsetY, 0, -Math.min(mScrollDy, getScrollY()));
                     mOffsetY -= mScrollDy;
                 }
@@ -154,23 +157,18 @@ public class ScrollerSelectView extends View {
         return true;
     }
 
+    private void resetAllPre() {
+        for (ContentItem item : mItems) {
+            item.isSelect = preSelectStatus[item.index];
+        }
+    }
+
     private ContentItem getDownItem(int x, int y) {
-        int closestDis = Integer.MAX_VALUE;
-        int closeIndex = -1;
-        int i = 0;
         for (ContentItem it : mItems)  {
             if (it.left < x && x < it.right && it.top < y && y < it.bottom) {
                 return it;
             }
-//            int dx = (it.left + it.right) / 2 - x;
-//            int dy = (it.top + it.bottom) / 2 - y;
-//            if (closestDis > dx * dx + dy * dy) {
-//                closestDis = dx * dx + dy * dy;
-//                closeIndex = i;
-//            }
-//            i++;
         }
-//        return mItems.get(closeIndex);
         return null;
     }
 
@@ -215,9 +213,13 @@ public class ScrollerSelectView extends View {
             for (ContentItem item : mItems) {
                 if (mSelectStartPoint.y < item.top && item.bottom < mSelectEndPoint.y) {//inside
                     item.isSelect = mFirstSelectItem.isSelect;
-                } else if (item.top < mSelectStartPoint.y && mSelectStartPoint.y < item.bottom
-                        && mSelectStartPoint.x < item.right && item.right < mSelectEndPoint.x) {//up side bounder
-                    item.isSelect = mFirstSelectItem.isSelect;
+                } else if (item.top < mSelectStartPoint.y && mSelectStartPoint.y < item.bottom) {//up side bounder
+                    if ((mSelectStartPoint.x < item.right && item.left < mSelectEndPoint.x)
+                            || (item.bottom < mSelectEndPoint.y && mSelectStartPoint.x < item.right)) {
+                        item.isSelect = mFirstSelectItem.isSelect;
+                    } else {
+                        item.isSelect = preSelectStatus[item.index];
+                    }
                 } else if (item.top < mSelectEndPoint.y && mSelectEndPoint.y < item.bottom
                         && item.left < mSelectEndPoint.x) {//bottom side bounder
                     item.isSelect = mFirstSelectItem.isSelect;
@@ -229,11 +231,15 @@ public class ScrollerSelectView extends View {
             for (ContentItem item : mItems) {
                 if (mSelectEndPoint.y < item.top && item.bottom < mSelectStartPoint.y) {//inside
                     item.isSelect = mFirstSelectItem.isSelect;
+                } else if (item.top < mSelectStartPoint.y && mSelectStartPoint.y < item.bottom) {//bottom side bounder
+                    if ((mSelectEndPoint.x < item.right && item.right < mSelectStartPoint.x)
+                            ||(mSelectEndPoint.y < item.top && item.left < mSelectStartPoint.x)) {
+                        item.isSelect = mFirstSelectItem.isSelect;
+                    } else {
+                        item.isSelect = preSelectStatus[item.index];
+                    }
                 } else if (item.top < mSelectEndPoint.y && mSelectEndPoint.y < item.bottom
                         && mSelectEndPoint.x < item.right && item.right < mSelectStartPoint.x) {//up side bounder
-                    item.isSelect = mFirstSelectItem.isSelect;
-                } else if (item.top < mSelectStartPoint.y && mSelectStartPoint.y < item.bottom
-                        && item.left < mSelectStartPoint.x) {//bottom side bounder
                     item.isSelect = mFirstSelectItem.isSelect;
                 } else {
                     item.isSelect = preSelectStatus[item.index];
@@ -247,3 +253,4 @@ public class ScrollerSelectView extends View {
         for (ContentItem it : mItems) preSelectStatus[it.index] = it.isSelect;
     }
 }
+
