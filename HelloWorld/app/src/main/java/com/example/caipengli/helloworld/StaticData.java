@@ -14,6 +14,7 @@ import java.util.List;
 
 public class StaticData {
     public static final String STANDARD_CHINESE = "中";
+//    public static String CONTENT = "这句话端到阿斯顿发难拉伸看对方你看急啊三年的及开发巴哈时间的话笔峰华盛顿咖啡和看见那发卡数据电脑卡萨记得那克萨地方阿三将大幅那就卡";
     public static String CONTENT = "整个Scroller用法的代码都在这里了，代码并不长，一共才100多行，我们一点点来看。 \n" +
             "首先在ScrollerLayout的构造函数里面我们进行了上述步骤中的第一步操作，即创建Scroller的实例，由于Scroller的实例只需创建一次，因此我们把它放到构造函数里面执行。另外在构建函数中我们还初始化的TouchSlop的值，这个值在后面将用于判断当前用户的操作是否是拖动。 \n" +
             "接着重写onMeasure()方法和onLayout()方法，在onMeasure()方法中测量ScrollerLayout里的每一个子控件的大小，在onLayout()方法中为ScrollerLayout里的每一个子控件在水平方向上进行布局。如果有朋友对这两个方法的作用还不理解，可以参照我之前写的一篇文章 Android视图绘制流程完全解析，带你一步步深入了解View(二) 。 \n" +

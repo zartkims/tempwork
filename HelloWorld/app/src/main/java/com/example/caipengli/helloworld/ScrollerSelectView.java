@@ -18,9 +18,10 @@ import java.util.List;
  */
 
 public class ScrollerSelectView extends View {
-    private static final int CONTENT_TEXT_SIZE_DP = 18;
+    public static final int CONTENT_TEXT_SIZE_DP = 18;
     private final static float BOTTOM_SCROLL_AREA_HEIGHT = 50;
     private final static float TOP_SCROLL_AREA_HEIGHT = 50;
+    private final static int IGNORE_DIS = 5;//dp
 
     private Scroller mScroller;
     private Paint mPaint;
@@ -44,6 +45,11 @@ public class ScrollerSelectView extends View {
 
     private List<ContentItem> mItems;
     private boolean [] preSelectStatus;
+
+    private boolean mIsSelect = true;
+    private boolean mIsNewOperation = true;
+    private float mIgnoreDis = 15;
+    private boolean mIsNeedcheckSlide;//
 
 
     public ScrollerSelectView(Context context) {
@@ -69,16 +75,9 @@ public class ScrollerSelectView extends View {
         mContentHeight = (int) (3000 * density);
         mScrollDy = (int) (10 * density);
         mContentTextSize = (int) (CONTENT_TEXT_SIZE_DP * density);
-
-        mItems = StaticData.getContentItem(StaticData.getContentStrings(), getContext(), CONTENT_TEXT_SIZE_DP, 0, mScrollDy,
-                mScreenWidth, 2, 2,
-                5, 3,
-                10, 10);
-        if (mItems.size() > 0) mContentHeight = mItems.get(mItems.size() - 1).bottom;
-        preSelectStatus = new boolean[mItems.size()];
-        resetPreStatus();
-        int mostBottom = mItems.get(mItems.size() - 1).bottom;
-        mContentHeight = mostBottom > mContentHeight ? mostBottom : mContentHeight;
+        mIgnoreDis = IGNORE_DIS * density;
+        mTopInScreen = -1;
+        mIsSelect = false;
 
         mSelectStartPoint = new Point();
         mSelectEndPoint = new Point();
@@ -93,14 +92,15 @@ public class ScrollerSelectView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if (mItems == null) return false;
         if (mTopInScreen == -1) {
             int [] loc = new int [2];
             getLocationOnScreen(loc);
             mTopInScreen = loc[1];
         }
-
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                mIsNewOperation = true;
                 mSelectStartPoint.set((int)event.getX(), (int)event.getY() + getScrollY());
                 mFirstSelectItem = getDownItem((int)event.getX(), (int)event.getY() + getScrollY());
                 if (mFirstSelectItem != null) {
@@ -108,7 +108,85 @@ public class ScrollerSelectView extends View {
                     preSelectStatus[mFirstSelectItem.index] = mFirstSelectItem.isSelect;
                     timeChangeMark = System.currentTimeMillis();
                 }
+                invalidate();
                 break;
+            case MotionEvent.ACTION_UP :
+                mIsNewOperation = true;
+                mFirstSelectItem = null;
+                break;
+        }
+        if (mIsNeedcheckSlide) {
+            if (!mIsSelect) {
+                if (Math.abs(event.getX() - mSelectStartPoint.x) < mIgnoreDis && Math.abs(event.getY() + getScrollY() - mSelectStartPoint.y) < mIgnoreDis) {
+                    Log.i("cpl!", "ignore small distance");
+                    return true;
+                }
+            }
+            if (mIsNewOperation) checkSlideOrSelect(event);
+
+            if (mIsSelect) {
+                checkSelectItems(event);
+            } else {
+                checkSlideView(event);
+            }
+        } else {
+            checkSelectItems(event);
+        }
+
+        invalidate();
+        return true;
+    }
+
+    private void checkSlideView(MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_MOVE:
+            case MotionEvent.ACTION_CANCEL:
+                float dy = event.getY() + getScrollY() - mSelectStartPoint.y;
+                int validDy = 0;
+                if (dy > 0) {
+                    validDy = -Math.min(getScrollY(), (int)dy);
+                    scrollBy(0, validDy);
+                } else {
+                    validDy = Math.min(mContentHeight - getScrollY() - mViewHeight, -(int)dy);
+                    scrollBy(0, validDy);
+                }
+                mOffsetY += validDy;
+                break;
+        }
+    }
+
+    private void checkSlideOrSelect(MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+            case MotionEvent.ACTION_CANCEL:
+                float dx = Math.abs(event.getX() - mSelectStartPoint.x);
+                float dy = Math.abs(event.getY() + getScrollY() - mSelectStartPoint.y);
+                float tangent = dy / dx;
+                float tt = tangent * tangent;
+                if (tt < 1.0f / 3.0f) {//less than 30 degree
+                    mIsSelect = true;
+                } else {
+                    mIsSelect = false;
+                }
+                mIsNewOperation = false;
+                break;
+
+        }
+    }
+
+    private void checkSelectItems(MotionEvent event) {
+        switch (event.getAction()) {
+//            case MotionEvent.ACTION_DOWN:
+//                mSelectStartPoint.set((int)event.getX(), (int)event.getY() + getScrollY());
+//                mFirstSelectItem = getDownItem((int)event.getX(), (int)event.getY() + getScrollY());
+//                if (mFirstSelectItem != null) {
+//                    mFirstSelectItem.isSelect = !mFirstSelectItem.isSelect;
+//                    preSelectStatus[mFirstSelectItem.index] = mFirstSelectItem.isSelect;
+//                    timeChangeMark = System.currentTimeMillis();
+//                }
+//                break;
             case MotionEvent.ACTION_MOVE:
             case MotionEvent.ACTION_CANCEL:
                 mSelectEndPoint.set((int)event.getX(), (int)event.getY() + getScrollY());
@@ -151,10 +229,10 @@ public class ScrollerSelectView extends View {
                 mSelectStartPoint.set(0, 0);
                 mSelectEndPoint.set(0, 0);
                 resetPreStatus();
+                mIsSelect = false;
                 break;
         }
         invalidate();
-        return true;
     }
 
     private void resetAllPre() {
@@ -183,7 +261,7 @@ public class ScrollerSelectView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
+        if (mItems == null) return;
         for (int curH = 0; curH < mContentHeight; curH += 200) {
             if (curH % 400 == 0) mPaint.setColor(Color.GREEN);
             else mPaint.setColor(Color.RED);
@@ -248,6 +326,19 @@ public class ScrollerSelectView extends View {
         }
     }
 
+    public void setDataSource(List<ContentItem> datas) {
+        mItems = datas;
+        if (mItems == null) {
+            mContentHeight = 0;
+            invalidate();
+            preSelectStatus = null;
+            return;
+        }
+        preSelectStatus = new boolean[mItems.size()];
+        resetPreStatus();
+        if (mItems.size() > 0) mContentHeight = mItems.get(mItems.size() - 1).bottom;
+        mIsNeedcheckSlide = mContentHeight > mViewHeight;
+    }
 
     private void resetPreStatus() {
         for (ContentItem it : mItems) preSelectStatus[it.index] = it.isSelect;
