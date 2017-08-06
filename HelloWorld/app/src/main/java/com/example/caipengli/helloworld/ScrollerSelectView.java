@@ -41,7 +41,6 @@ public class ScrollerSelectView extends View {
     private Point mSelectStartPoint;
     private Point mSelectEndPoint;
     private ContentItem mFirstSelectItem;
-    private long timeChangeMark = -1;
 
     private List<ContentItem> mItems;
     private boolean [] preSelectStatus;
@@ -50,6 +49,7 @@ public class ScrollerSelectView extends View {
     private boolean mIsNewOperation = true;
     private float mIgnoreDis = 15;
     private boolean mIsNeedcheckSlide;//
+    private boolean mFirstOpeartion = true;
 
 
     public ScrollerSelectView(Context context) {
@@ -106,13 +106,14 @@ public class ScrollerSelectView extends View {
                 if (mFirstSelectItem != null) {
                     mFirstSelectItem.isSelect = !mFirstSelectItem.isSelect;
                     preSelectStatus[mFirstSelectItem.index] = mFirstSelectItem.isSelect;
-                    timeChangeMark = System.currentTimeMillis();
                 }
+                mFirstOpeartion = true;
                 invalidate();
                 break;
             case MotionEvent.ACTION_UP :
                 mIsNewOperation = true;
                 mFirstSelectItem = null;
+                mFirstOpeartion = true;
                 break;
         }
         if (mIsNeedcheckSlide) {
@@ -143,6 +144,17 @@ public class ScrollerSelectView extends View {
             case MotionEvent.ACTION_CANCEL:
                 float dy = event.getY() + getScrollY() - mSelectStartPoint.y;
                 int validDy = 0;
+                if (mFirstOpeartion) {
+                    mFirstOpeartion = false;
+                    if (dy >= 0 && getScrollY() ==0) {
+                        mIsSelect = true;
+                        return;
+                    }
+                    if (dy < 0 && mContentHeight - getScrollY() - mViewHeight == 0) {
+                        mIsSelect = true;
+                        return;
+                    }
+                }
                 if (dy > 0) {
                     validDy = -Math.min(getScrollY(), (int)dy);
                     scrollBy(0, validDy);
@@ -212,7 +224,6 @@ public class ScrollerSelectView extends View {
                     if (mFirstSelectItem != null) {
                         mFirstSelectItem.isSelect = !mFirstSelectItem.isSelect;
                         preSelectStatus[mFirstSelectItem.index] = mFirstSelectItem.isSelect;
-                        timeChangeMark = System.currentTimeMillis();
                     }
                 }
 //                Log.i("cpl!", "getx  : " + event.getX() + "    getY : " + event.getY() + " getScrollY : " + getScrollY() + "   fis : " + mFirstSelectItem.isSelect);
